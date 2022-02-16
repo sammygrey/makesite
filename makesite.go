@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -13,21 +14,40 @@ type HTMLcontents struct {
 }
 
 func main() {
-	fileInput := flag.String("file", "first-post.txt", "txt file to pass in")
+	parsedDir := flag.String("dir", ".", "Read all txt files in directory")
 	flag.Parse()
 
-	newHTML := strings.Split(*fileInput, ".")[0] + ".html"
+	if *parsedDir != "" {
+		println("Converting all txt files in " + *parsedDir + " to html")
+		files, fileError := ioutil.ReadDir(*parsedDir)
+		if fileError != nil {
+			panic(fileError)
+		}
 
-	fileContents, _ := ioutil.ReadFile(*fileInput)
+		for _, file := range files {
+			if file.Mode().IsRegular() {
+				extension := filepath.Ext(file.Name())
+				if extension == ".txt" {
+					HTMLName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name())) + ".html"
+					fileContents, _ := ioutil.ReadFile(file.Name())
 
-	templateStruct := HTMLcontents{Content: string(fileContents)}
+					templateStruct := HTMLcontents{Content: string(fileContents)}
 
-	parsedTemplate, _ := template.ParseFiles("template.tmpl")
+					// Use a defined template
+					parsedTemplate, _ := template.ParseFiles("template.tmpl")
 
-	newFile, _ := os.Create(newHTML)
+					// Create a file to write to
+					newFile, _ := os.Create(HTMLName)
 
-	err := parsedTemplate.Execute(newFile, templateStruct)
-	if err != nil {
-		panic(err)
+					// Write to new file using template and data
+					err := parsedTemplate.Execute(newFile, templateStruct)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}
+		}
+	} else {
+		println("A directory was not passed, no HTML files have been generated.")
 	}
 }

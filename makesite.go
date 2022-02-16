@@ -3,22 +3,28 @@ package main
 import (
 	"flag"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/alexjohnj/caesar"
 )
 
 type HTMLcontents struct {
-	Content string
+	Encrypted string
+	Key       int
+	Example   string
 }
 
 func main() {
+	abc := "a b c d e f g h i j k l m n o p q r s t u v w x y z"
 	parsedDir := flag.String("dir", ".", "Read all txt files in directory")
 	flag.Parse()
 
 	if *parsedDir != "" {
-		println("Converting all txt files in " + *parsedDir + " to html")
+		println("Converting all txt files in " + *parsedDir + " to encrypted html")
 		files, fileError := ioutil.ReadDir(*parsedDir)
 		if fileError != nil {
 			panic(fileError)
@@ -30,8 +36,8 @@ func main() {
 				if extension == ".txt" {
 					HTMLName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name())) + ".html"
 					fileContents, _ := ioutil.ReadFile(file.Name())
-
-					templateStruct := HTMLcontents{Content: string(fileContents)}
+					randKey := rand.Intn(26)
+					templateStruct := HTMLcontents{Encrypted: caesar.EncryptPlaintext(string(fileContents), randKey), Key: randKey, Example: caesar.EncryptPlaintext(abc, randKey)}
 
 					// Use a defined template
 					parsedTemplate, _ := template.ParseFiles("template.tmpl")
